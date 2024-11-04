@@ -8,11 +8,7 @@
 * Swift -- 5.3
 * SwiftUI -- 2.0
 # Authors
-* kazuya ito
+* Alan Trundle
 
 
-# bluetooth_app
-# bluetooth_app
-# bluetooth_app
-# bluetooth_app
 # bluetooth_app
