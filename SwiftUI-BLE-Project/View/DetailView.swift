@@ -293,22 +293,7 @@ struct SecurityKeyDetail : View  {
         VStack {
             Button("Save Keys") {
                 
-                var changed:Bool = false
-                
-                for index in 0..<(sql.mykeydata.count) {
-                    
-                    // find original values, and replace them
-                    if (sql.mykeydata[index].dbid == sql.list_keys[index].dbid) {
-                        if ((sql.mykeydata[index].keyA != sql.list_keys[index].keyA) || (sql.mykeydata[index].keyB != sql.list_keys[index].keyB)) {
-                            
-                            sql.mykeydata[index].keyA = sql.list_keys[index].keyA
-                            sql.mykeydata[index].keyB = sql.list_keys[index].keyB
-                            
-                            changed = true
-                            
-                        }
-                    }
-                }
+                var changed:Bool = true
                 
                 if changed {
                     showSaveAlert = sql.update_keys(row: row, dbid: dbid, master_table: sql.mykeys, keys_table: sql.list_keys)
