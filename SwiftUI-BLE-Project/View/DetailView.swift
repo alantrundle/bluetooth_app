@@ -295,7 +295,7 @@ struct SecurityKeyDetail : View  {
                 
                 var changed:Bool = false
                 
-                for index in 0..<(sql.list_keys.count) {
+                for index in 0..<(sql.mykeydata.count) {
                     
                     // find original values, and replace them
                     if (sql.mykeydata[index].dbid == sql.list_keys[index].dbid) {
