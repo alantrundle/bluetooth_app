@@ -228,30 +228,64 @@ struct ReaderDataCells: View {
 struct SecurityKeyDataCells: View {
     @State var sql: DBManager
     @EnvironmentObject var bleManager: CoreBluetoothViewModel
-    @State var keys:[cardSecurityKeys] = []
+    @State var keys:[cardSecurityKeysTable] = []
+    @State var showAlert: Bool = false
     
     var body: some View {
         
-        ForEach(0..<(sql.mykeys.count), id: \.self) { num in
+        VStack(alignment: .center) {
+            HStack {
+                Button("Setup Database") {
+                    showAlert = true
+                }
+                .frame(width: 150, height: 60)
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
             
-            NavigationLink(destination: SecurityKeyDetail(sql:sql, row: num, dbid: sql.mykeys[num].dbid)) {
+            }
+        }
+        .padding(.bottom, 20)
+        .alert("Setup Confirmation", isPresented: $showAlert) {
+            Button("Cancel") {
+                // Action for OK
+                print("Setup aborted")
+            }
+            Button("Continue") {
+                // Action for OK
+                //sql.dropAllTables()
+                sql.setupDatabase()
+                
+                sql.db = sql.openDatabase()
+                sql.keyProfileTable = sql.readProfileTable()
+                print("Setup done")
+            }
+        } message: {
+            Text("You are about to delete the database (if one exists), and create a new one\nPlease confirm to contiune?")
+                .multilineTextAlignment(.leading)
+        }
+        
+        ForEach(0..<(sql.keyProfileTable.count), id: \.self) { num in
+            
+            NavigationLink(destination: SecurityKeyDetail(sql:sql, row: num, dbid: sql.keyProfileTable[num].profileID)) {
                 
                 VStack {
                     HStack {
                         Image(systemName: "creditcard.and.123")
                         
-                        Text("\(sql.mykeys[num].dbid)")
+                        Text("\(sql.keyProfileTable[num].profileID)")
                             .font(.system(size:14))
+
+                        Text(sql.keyProfileTable[num].profileName)
+                                    .font(.system(size:14))
                         
-                        Text(sql.mykeys[num].name)
-                            .font(.system(size:14))
                     }
                 }
                 .onAppear {
-                    sql.list_keys = []
                     sql.generateKeyDataArray = true
                     
                 }
+           
             }
         }
     }
@@ -268,9 +302,11 @@ struct SecurityKeyDetail : View  {
     @State var row: Int
     @State var dbid: Int
     @State var isShowing = false
-    @State var keys:[cardSecurityKeys] = []
+    @State var keys:[cardSecurityKeysTable] = []
     @State var showSaveAlert:Bool = false
     @State var showNonSaveAlert:Bool = false
+    
+    //@Binding var listKeys:cardSecurityKeysTable?
     
     
     var body: some View {
@@ -293,10 +329,11 @@ struct SecurityKeyDetail : View  {
         VStack {
             Button("Save Keys") {
                 
-                var changed:Bool = true
+                let changed:Bool = true
                 
                 if changed {
-                    showSaveAlert = sql.update_keys(row: row, dbid: dbid, master_table: sql.mykeys, keys_table: sql.list_keys)
+                    print(sql.list_keys)
+                    showSaveAlert = sql.update_keys(keys_table: sql.list_keys)
                     print("Saved Data")
                 }else {
                     showNonSaveAlert = true
@@ -315,13 +352,14 @@ struct SecurityKeyDetail : View  {
         } message: {
             Text("No changes to commit.")
         }
+        
         .alert("Save Confirmation", isPresented: $showSaveAlert) {
             Button("OK") {
                 // Action for OK
                 print("Data has been saved")
             }
         } message: {
-            Text("Keys for \(sql.mykeys[row].name) have been saved")
+            Text("Keys for \(sql.keyProfileTable[row].profileName) have been saved")
         }
     }
 }
@@ -332,23 +370,25 @@ struct SecurityKeyDetailCell : View  {
     @State var row:Int
     @State var dbid:Int
     
+    //@Binding var listKeys:cardSecurityKeysTable?
+    
     var body: some View {
         
         ForEach(0..<(sql.list_keys.count), id: \.self) { num in
             
-            Section(header: Text("Sector \(sql.list_keys[num].sectorNum) [\(sql.mykeys[row].name)]")) {
+            Section(header: Text("Sector \(sql.list_keys[num].sectorNum) [\(sql.keyProfileTable[row].profileName)]")) {
                 
                 NavigationLink(destination: EditSecurityKey(row: num, dbid: dbid, sql: sql)) {
                     
                     HStack {
                         
                         Image(systemName: "key.horizontal")
-                        Text("A").font(.system(size:14))
-                        Text(sql.list_keys[num].keyA).font(.system(size:14))
+                        Text("A").font(.system(size:12))
+                        Text(sql.list_keys[num].keyA).font(.system(size:12))
                         
                         Image(systemName: "key.horizontal")
-                        Text("B").font(.system(size:14))
-                        Text(sql.list_keys[num].keyB).font(.system(size:14))
+                        Text("B").font(.system(size:12))
+                        Text(sql.list_keys[num].keyB).font(.system(size:12))
                         
                         Spacer()
                         
@@ -398,6 +438,10 @@ struct EditSecurityKey: View {
                     .font(Font.system(size: 14))
                     .onTapGesture {
                         focusedField = .keyA
+                        
+                        if sql.list_keys[row].keyA.count >= maxCharacters {
+                            print("should be highlighted")
+                        }
                     }
                     .onChange(of: sql.list_keys[row].keyA) { newValue in
                         // Limit the input to maxCharacters
@@ -405,7 +449,7 @@ struct EditSecurityKey: View {
                             sql.list_keys[row].keyA = String(newValue.prefix(maxCharacters))
                         }
                     }
-            
+                
                 Spacer()
             }
             
@@ -416,7 +460,7 @@ struct EditSecurityKey: View {
                 
                 Text ("B")
                     .font(Font.system(size: 14))
-         
+                
                 TextField("sector B key...", text: $sql.list_keys[row].keyB)
                     .background(focusedField == .keyB ? Color.mint : Color.clear)
                     .focused($focusedField, equals: .keyB)
@@ -425,6 +469,10 @@ struct EditSecurityKey: View {
                     .font(Font.system(size: 14))
                     .onTapGesture {
                         focusedField = .keyB
+                        
+                        if sql.list_keys[row].keyB.count >= maxCharacters {
+                            print("should be highlighted")
+                        }
                     }
                     .onChange(of: sql.list_keys[row].keyB) { newValue in
                         // Limit the input to maxCharacters
@@ -437,6 +485,9 @@ struct EditSecurityKey: View {
             }
             .padding(.leading, 15)
             .padding(.trailing, 15)
+            .onAppear {
+                UITextField.appearance().inputView = UIView()
+            }
             
             VStack {
                 
@@ -466,13 +517,13 @@ struct EditSecurityKey: View {
             HStack {
                 Button("Revert") {
     
-                    for index in 0..<(sql.mykeydata.count) {
+                    for index in 0..<(sql.keysTable.count) {
                         
                         // find original values, and replace them
-                        if (sql.mykeydata[index].sectorNum == sql.list_keys[row].sectorNum && sql.mykeydata[index].dbid == dbid) {
+                        if (sql.keysTable[index].sectorNum == sql.list_keys[row].sectorNum && sql.keysTable[index].keyID == dbid) {
                             
-                            sql.list_keys[row].keyA = sql.mykeydata[index].keyA
-                            sql.list_keys[row].keyB = sql.mykeydata[index].keyB
+                            sql.list_keys[row].keyA = sql.keysTable[index].keyA
+                            sql.list_keys[row].keyB = sql.keysTable[index].keyB
                             
                         }
                     }
@@ -506,11 +557,17 @@ func loadDataMain(sql: DBManager) async {
         
         sql.isLoading = true
         
-        //bleManager.createDatabase() // creates DB if it doesn't exist
+        //sql.setupDatabase() // creates DB if it doesn't exist
+        
         sql.db = sql.openDatabase()
-        sql.mykeys = sql.read()
-        // populate row array from main table
-        sql.mykeydata = sql.convertKeyDataToArray(thsArray: sql.mykeys)
+        sql.keyProfileTable = sql.readProfileTable()
+        
+        sql.db = sql.openDatabase()
+        sql.keysTable = sql.readKeysTable()
+        
+        sql.db = sql.openDatabase()
+        sql.cardTypesTable = sql.readcardTypesTable()
+        
         sql.isLoading = false
     }
     
@@ -525,13 +582,8 @@ func loadData(sql: DBManager, dbid:Int) async {
             sql.generateKeyDataArray = false
             sql.isLoading = true
             
-            for index in 0..<(sql.mykeydata.count) {
-                if sql.mykeydata[index].dbid == dbid  {
-                    let newEntry = cardSecurityKeys(id: sql.mykeydata[index].id, dbid: sql.mykeydata[index].dbid, sectorNum: sql.mykeydata[index].sectorNum, keyA: sql.mykeydata[index].keyA, keyB: sql.mykeydata[index].keyB)
-                    sql.list_keys.append(newEntry)
-                    
-                }
-            }
+            sql.db = sql.openDatabase()
+            sql.list_keys = sql.readKeysTableByProfileID(profileID: dbid)
         }
         
         sql.isLoading = false

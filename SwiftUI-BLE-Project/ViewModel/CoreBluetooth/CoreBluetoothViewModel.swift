@@ -127,25 +127,7 @@ class CoreBluetoothViewModel: NSObject, ObservableObject, CBPeripheralProtocolDe
         }
     }
     
-    func createDatabase() {
-        
-        dbManager.db = dbManager.openDatabase()
-        dbManager.dropUserTable()
-        
-        dbManager.db = dbManager.openDatabase()
-        let result = dbManager.createUserTable()
-        
-        if (result == true) {
-            
-            dbManager.db = dbManager.openDatabase()
-            dbManager.insertSecurityKeySet(name: "Default keyset", sector0A: "FFFFFFFFFFFF", sector0B: "FFFFFFFFFFFF", sector1A: "FFFFFFFFFFFF", sector1B: "FFFFFFFFFFFF", sector2A: "FFFFFFFFFFFF", sector2B: "FFFFFFFFFFFF", sector3A: "FFFFFFFFFFFF", sector3B: "FFFFFFFFFFFF", sector4A: "FFFFFFFFFFFF", sector4B: "FFFFFFFFFFFF", sector5A: "FFFFFFFFFFFF", sector5B: "FFFFFFFFFFFF", sector6A: "FFFFFFFFFFFF", sector6B: "FFFFFFFFFFFF", sector7A: "FFFFFFFFFFFF", sector7B: "FFFFFFFFFFFF", sector8A: "FFFFFFFFFFFF", sector8B: "FFFFFFFFFFFF", sector9A: "FFFFFFFFFFFF", sector9B: "FFFFFFFFFFFF", sector10A: "FFFFFFFFFFFF", sector10B: "FFFFFFFFFFFF", sector11A: "FFFFFFFFFFFF", sector11B: "FFFFFFFFFFFF", sector12A: "FFFFFFFFFFFF", sector12B: "FFFFFFFFFFFF", sector13A: "FFFFFFFFFFFF", sector13B: "FFFFFFFFFFFF", sector14A: "FFFFFFFFFFFF", sector14B: "FFFFFFFFFFFF", sector15A: "FFFFFFFFFFFF", sector15B: "FFFFFFFFFFFF")
-            
-            dbManager.db = dbManager.openDatabase()
-            dbManager.insertSecurityKeySet(name: "Second keyset", sector0A: "FFFFFFFFFFF0", sector0B: "FFFFFFFFFFF1", sector1A: "FFFFFFFFFFF2", sector1B: "FFFFFFFFFFF3", sector2A: "FFFFFFFFFFF4", sector2B: "FFFFFFFFFFF5", sector3A: "FFFFFFFFFFF6", sector3B: "FFFFFFFFFFF7", sector4A: "FFFFFFFFFFF8", sector4B: "FFFFFFFFFFF9", sector5A: "FFFFFFFFFF10", sector5B: "FFFFFFFFFF11", sector6A: "FFFFFFFFFF12", sector6B: "FFFFFFFFFF13", sector7A: "FFFFFFFFFF14", sector7B: "FFFFFFFFFF15", sector8A: "FFFFFFFFFF16", sector8B: "FFFFFFFFFF17", sector9A: "FFFFFFFFFF18", sector9B: "FFFFFFFFFF19", sector10A: "FFFFFFFFFF20", sector10B: "FFFFFFFFFF21", sector11A: "FFFFFFFFFF22", sector11B: "FFFFFFFFFF23", sector12A: "FFFFFFFFFF24", sector12B: "FFFFFFFFFF25", sector13A: "FFFFFFFFFF26", sector13B: "FFFFFFFFFF27", sector14A: "FFFFFFFFFF28", sector14B: "FFFFFFFFFF29", sector15A: "FFFFFFFFFF30", sector15B: "FFFFFFFFFF31")
-        }
-        
-  
-    }
+    
     
     //Control Func
     func startScan() {
