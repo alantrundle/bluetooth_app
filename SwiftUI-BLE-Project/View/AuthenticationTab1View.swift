@@ -7,7 +7,12 @@
 import SwiftUI
 import UIKit
 
-import SwiftUI
+/* Custom HEX Keyboard */
+
+enum Field: String {
+    case keyA
+    case keyB
+}
 
 struct HexKeyboard: View {
     @Binding var text: String         // Binding to the text field
@@ -51,48 +56,12 @@ struct HexKeyboard: View {
     }
 }
 
-enum Field: String {
-    case keyA
-    case keyB
-}
+
+/* Custom HEX Keyboard */
 
 
-
-
-
-struct DetailView: View {
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
-    @State private var showingAlert = false
-    
-    var body: some View {
-        TabView {
-            CardSecurityEditorView()
-                .tabItem {
-                    Label("Security", systemImage: "list.dash")
-                }
-            CardDataEditorView()
-                .tabItem {
-                    Label("Details", systemImage: "filemenu.and.selection")
-                }
-        }
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            if (bleManager.isConnected) {
-                Button("Disconnect") {
-                    bleManager.disconnectPeripheral()
-                }
-            } else {
-                Text("Disconnected")
-                    .foregroundColor(.red)
-            }
-        }
-    }
-}
-
-// 1st tab
-// ToDo
-// Switch view to SecurityKeyDetail view passing in id from database
 struct CardSecurityEditorView: View {
+
     @EnvironmentObject var bleManager: CoreBluetoothViewModel
     @State var sql:DBManager = DBManager()
     
@@ -100,7 +69,7 @@ struct CardSecurityEditorView: View {
         VStack {
             
             HStack {
-                Text("Mifare Card Security")
+                Text("Mifare Card Authentication Admin")
             }
             .font(.system(size:20))
             if sql.isLoading {
@@ -120,108 +89,6 @@ struct CardSecurityEditorView: View {
     }
 }
 
-
-// 2nd tab
-// Editor View
-struct CardDataEditorView: View {
-    
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
-    @State private var showingAlert = false
-    
-    var body: some View {
-        VStack {
-            
-            HStack {
-                Text("Mifare Card Security")
-            }
-            .font(.system(size:20))
-            
-            HStack {
-                Button("Read") {
-                    print("Read tapped!")
-                }
-                .frame(width: 100, height: 50)
-                .background(Color.yellow)
-                .padding(.leading, 15)
-                .padding(.bottom, 15)
-                
-                Spacer()
-            }
-            
-            HStack {
-                Text("Card ID")
-                    .padding(.leading, 20)
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                
-                Text(bleManager.decodedHeadString?.head.uid ?? "None")
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                
-                Spacer()
-                
-                
-            }
-            
-            HStack {
-                Text("Card Type")
-                    .padding(.leading, 20)
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                
-                Text(bleManager.decodedHeadString?.head.type ?? "Unknown")
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                
-                Spacer()
-            }
-            
-            VStack {
-                
-                List {
-                    ReaderDataCells()
-                }
-                .padding(.top, 20)
-                
-            }
-            
-        }
-        .alert(isPresented: $bleManager.showAlert) {
-            Alert(title: Text(bleManager.error_title),
-                  message: Text(bleManager.error_msg)
-            )}
-        
-    }
-}
-
-// Card Reader Tab
-// Cells for Editor View
-struct ReaderDataCells: View {
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
-    
-    var body: some View {
-        ForEach(0..<(bleManager.decodedSectorString?.count ?? 0), id: \.self) { num in
-            Section(header: Text("Sector \(bleManager.decodedSectorString![num].sector.sectorID)")) {
-                ForEach(0..<bleManager.decodedSectorString![num].sector.data.count, id: \.self) { j in
-                    
-                    VStack {
-                        if (bleManager.decodedSectorString![num].sector.data[j].blockReaderr.isEmpty) {
-                            Text("[\(bleManager.decodedSectorString![num].sector.data[j].blockID)] \(bleManager.decodedSectorString![num].sector.data[j].blockData)")
-                                .font(.system(size:12))
-                        } else {
-                            Text("[\(bleManager.decodedSectorString![num].sector.data[j].blockID)] \(bleManager.decodedSectorString![num].sector.data[j].blockReaderr)")
-                                .font(.system(size:12))
-                                .foregroundColor(.red)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 // Cells for Security Key View
 // Pass mykeys[num].id as t to SecurityKeyDetail
@@ -252,12 +119,11 @@ struct SecurityKeyDataCells: View {
                 print("Setup aborted")
             }
             Button("Continue") {
-                // Action for OK
-                //sql.dropAllTables()
+                sql.db = sql.openDatabase()
                 sql.setupDatabase()
                 
-                sql.db = sql.openDatabase()
                 sql.keyProfileTable = sql.readProfileTable()
+                sql.closeDB(db: sql.db)
                 print("Setup done")
             }
         } message: {
@@ -283,7 +149,6 @@ struct SecurityKeyDataCells: View {
                 }
                 .onAppear {
                     sql.generateKeyDataArray = true
-                    
                 }
            
             }
@@ -294,7 +159,6 @@ struct SecurityKeyDataCells: View {
 // Lists Sector Key Data
 // Main View
 // Debug SecurityKeyDetailCell not refreshing
-
 struct SecurityKeyDetail : View  {
     @EnvironmentObject var bleManager: CoreBluetoothViewModel
     
@@ -400,8 +264,6 @@ struct SecurityKeyDetailCell : View  {
     }
     
 }
-
-
 
 struct EditSecurityKey: View {
     @Environment(\.presentationMode) var presentationMode
@@ -590,11 +452,3 @@ func loadData(sql: DBManager, dbid:Int) async {
     }
 
 }
-
-// A SwiftUI preview.
-#Preview {
-    DetailView().environmentObject(CoreBluetoothViewModel())
-    //SecurityKeyDetail(sql:DBManager(), t:0).environmentObject(CoreBluetoothViewModel())
-    //EditSecurityKey(row: 0, sql: sql, table: 0)
-}
-
