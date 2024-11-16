@@ -10,16 +10,14 @@ import SwiftUI
 
 struct cardSecurityKeyProfileTable:Identifiable  {
     
-    var id: UUID = UUID()
-    var profileID: Int
+    var id: Int
     var profileName: String
-    var typeID: Int
+    var typeName: String
 }
 
 struct cardSecurityKeysTable: Identifiable {
     
-    var id: UUID = UUID()
-    var keyID: Int
+    var id: Int
     var profileID: Int
     var sectorNum: Int
     var keyA: String
@@ -29,26 +27,23 @@ struct cardSecurityKeysTable: Identifiable {
 }
 
 struct cardTypes: Identifiable {
-    var id:UUID = UUID()
-    var cardTypeID: Int
+    var id:Int
     var name:String
 }
 
-class DBManager: NSObject, ObservableObject {
-    
-    override init() {
-        super.init()
-    }
+class DBManager: ObservableObject {
     
     @Published var db:OpaquePointer?
-    @Published var keyProfileTable:[cardSecurityKeyProfileTable] = [cardSecurityKeyProfileTable]()
-    @Published var keysTable:[cardSecurityKeysTable] = [cardSecurityKeysTable]()
-    @Published var cardTypesTable: [cardTypes] = [cardTypes]()
+    @Published var keyProfileTable:[cardSecurityKeyProfileTable] = []
+    @Published var keysTable:[cardSecurityKeysTable] = []
+    @Published var cardTypesTable: [cardTypes] = []
     
-    @Published var list_keys:[cardSecurityKeysTable] = [cardSecurityKeysTable]()
+    @Published var list_keys:[cardSecurityKeysTable] = []
     
     @Published var generateKeyDataArray: Bool = true
     @Published var isLoading: Bool = false
+    
+    @Published var scrollToIndex:Int = -1
     
     let dataPath: String = "MifareDB"
     
@@ -76,17 +71,32 @@ class DBManager: NSObject, ObservableObject {
         return (sqlite3_close(db) != 0)
     }
     
-    
-    
-    
-    
     /* Database Admin functions*/
-    
     func dropAllTables() {
         
         deleteFile(file: dataPath)
     }
     
+    func  checkDatabaseExists() -> Bool {
+        return ifFileExists(file: dataPath)
+    }
+    
+    func ifFileExists(file: String) -> Bool {
+        // Get the URL for the Documents directory
+        let fileManager = FileManager.default
+        if let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+            // Path for the SQLite database
+            let dbPath = documentsDirectory.appendingPathComponent(file).path
+            
+            // Check if the file exists
+            if FileManager.default.fileExists(atPath: dbPath) {
+                print("Database already exists at: \(dbPath)")
+                return true
+            }
+        }
+        return false
+    }
+        
     func deleteFile(file: String) {
         // Path to the file you want to delete
         let fileManager = FileManager.default
@@ -169,7 +179,7 @@ class DBManager: NSObject, ObservableObject {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
             typeID INTEGER
-               );
+            );
            """
         
         var createTableStatement: OpaquePointer? = nil
@@ -344,7 +354,7 @@ class DBManager: NSObject, ObservableObject {
     /* Database Table SELECT functions*/
     
     func readProfileTable() -> [cardSecurityKeyProfileTable] {
-        let queryStatementString = "SELECT * FROM cardSecurityProfiles ORDER BY id ASC;"
+        let queryStatementString = "SELECT a.id, a.name, b.name FROM cardSecurityProfiles as a INNER JOIN cardTypes as b ON a.typeID = b.id ORDER BY a.id ASC;"
         var queryStatement: OpaquePointer? = nil
         var profileTable: [cardSecurityKeyProfileTable] = []
         
@@ -352,9 +362,9 @@ class DBManager: NSObject, ObservableObject {
             while sqlite3_step(queryStatement) == SQLITE_ROW {
                 let profile_id = sqlite3_column_int(queryStatement, 0)
                 let profile_name = String(describing: String(cString: sqlite3_column_text(queryStatement, 1)))
-                let type_id = sqlite3_column_int(queryStatement, 2)
+                let type_name = String(describing: String(cString: sqlite3_column_text(queryStatement, 2)))
                 
-                profileTable.append((cardSecurityKeyProfileTable)(profileID: Int(profile_id), profileName: profile_name, typeID: Int(type_id)))
+                profileTable.append((cardSecurityKeyProfileTable)(id: Int(profile_id), profileName: profile_name, typeName: type_name))
                 
             }
         } else {
@@ -380,7 +390,7 @@ class DBManager: NSObject, ObservableObject {
                 let keyB = String(describing: String(cString: sqlite3_column_text(queryStatement, 4)))
                 let accessPermissions = String(describing: String(cString: sqlite3_column_text(queryStatement, 5)))
                 
-                keysTable.append((cardSecurityKeysTable)(keyID: Int(keys_id), profileID: Int(profile_id), sectorNum: Int(sector_num), keyA: keyA, keyB: keyB, accessPermissions: accessPermissions))
+                keysTable.append((cardSecurityKeysTable)(id: Int(keys_id), profileID: Int(profile_id), sectorNum: Int(sector_num), keyA: keyA, keyB: keyB, accessPermissions: accessPermissions))
             }
         } else {
             print("SELECT statement keys could not be prepared")
@@ -405,7 +415,7 @@ class DBManager: NSObject, ObservableObject {
                 let keyB = String(describing: String(cString: sqlite3_column_text(queryStatement, 4)))
                 let accessPermissions = String(describing: String(cString: sqlite3_column_text(queryStatement, 5)))
                 
-                keysTable.append((cardSecurityKeysTable)(keyID: Int(keys_id), profileID: Int(profile_id), sectorNum: Int(sector_num), keyA: keyA, keyB: keyB, accessPermissions: accessPermissions))
+                keysTable.append((cardSecurityKeysTable)(id: Int(keys_id), profileID: Int(profile_id), sectorNum: Int(sector_num), keyA: keyA, keyB: keyB, accessPermissions: accessPermissions))
             }
         } else {
             print("SELECT statement keys could not be prepared")
@@ -426,7 +436,7 @@ class DBManager: NSObject, ObservableObject {
                 let card_id:Int32 = sqlite3_column_int(queryStatement, 0)
                 let name = String(describing: String(cString: sqlite3_column_text(queryStatement, 1)))
                 
-                keysTable.append((cardTypes)(cardTypeID: Int(card_id), name: name))
+                keysTable.append((cardTypes)(id: Int(card_id), name: name))
             }
         } else {
             print("SELECT statement types could not be prepared")
@@ -438,20 +448,7 @@ class DBManager: NSObject, ObservableObject {
     
     /* Database Table UPDATE Functions*/
     
-    func update_keys(keys_table:[cardSecurityKeysTable]) -> Bool {
-        
-        var result: Bool?
-        
-        for index in 0..<(keys_table.count) {
-            
-            db = openDatabase()
-            result = UpdateSecurityKeySet(id: keys_table[index].keyID, profileID: keys_table[index].profileID, sectorNum: keys_table[index].sectorNum, keyA: keys_table[index].keyA, keyB: keys_table[index].keyB, accessPermissions: keys_table[index].accessPermissions)
-            
-        }
-        
-        return result ?? false
-        
-    }
+    
     
     func UpdateSecurityKeySet(id: Int, profileID: Int, sectorNum: Int, keyA: String, keyB:String, accessPermissions: String) -> Bool {
         
@@ -483,88 +480,30 @@ class DBManager: NSObject, ObservableObject {
         }
     }
     
-    
-    
-    
-    
-    /* Custom Database Functions*/
-    
-    func setupDatabase() -> Bool {
-        var abort = false
+    func UpdateCardSecurityProfiles(id: Int, profileName: String) -> Bool {
         
-        var result_type_0: Int = -1
-        var result_type_1: Int = -1
+        let updateStatementString = "UPDATE cardSecurityProfiles SET name=? WHERE id=?;"
+        var updateStatement: OpaquePointer? = nil
         
-        var result_profile_id_0: Int = -1
-        var result_profile_id_1: Int = -1
-        
-        if dropTable(name: "cardTypes") {
-            if createCardTypesTable() {
-                result_type_0 = insertCardType(name: "Mifare Classic 1K")
-                result_type_1 = insertCardType(name: "Mifare Classic 1K")
-            } else if result_type_0 > 0 || result_type_1 > 0 {
-                abort = true
-            }
-        }
-        else {
-            abort = true
-        }
-        
-        if dropTable(name: "cardSecurityProfiles") {
-            if createKeyProfileTable() {
-                
-                print("DB_SETUP: Profile Table Creation OK")
-                
-                result_profile_id_0 = insertSecurityKeyProfiles(name: "Default Mifare Classic 1K", typeID: Int32(result_type_0))
-                
-                if result_type_0 > 0 {
-                    print("DB_SETUP: Default 4K profile created")
-                }
-                
-                result_profile_id_1 = insertSecurityKeyProfiles(name: "Default Mifare Classic 1K", typeID: Int32(result_type_1))
-                
-                if result_type_1 > 0 {
-                    print("DB_SETUP: Default 4K profile created")
-                }
-            }
-        }
-        else {
-            abort = true
-        }
-        
-        if dropTable(name: "cardSecurityKeys") {
+        if sqlite3_prepare_v2(db, updateStatementString, -1, &updateStatement, nil) == SQLITE_OK {
             
-            if createSecurityKeysTable() {
-                // Default 1K Classic Keys
-                for index:Int32 in 0..<15 {
-                    db = openDatabase()
-                    let insert_id = insertSecurityKeys(profileID: Int32(result_profile_id_0), sectorNum: index, keyA: "FFFFFFFFFFFF", keyB: "FFFFFFFFFFFF", accessPermissions: "FF0780")
-                    
-                    print("DB Setup: Insert into Keys completed successfully with id \(insert_id)")
-                }
-                
-                // Test 1K Classic Keys
-                for index:Int32 in 0..<15 {
-                    db = openDatabase()
-                    let insert_id = insertSecurityKeys(profileID: Int32(result_profile_id_1), sectorNum: index, keyA: "000000000000", keyB: "000000000000", accessPermissions: "FF0780")
-                    
-                    print("DB Setup: Insert into Keys completed successfully with id \(insert_id)")
-                }
-                
-                print("DB_SETUP: Profile Table Creation OK")
-            }
-            else {
-                abort = true
-            }
+            sqlite3_bind_text(updateStatement, 1, (profileName as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(updateStatement, 2, Int32(id))
             
-            if abort == true {
+            if sqlite3_step(updateStatement) == SQLITE_DONE {
+                print("cardSecurityKeys has been updated with \(id) has been updated created successfully.")
+                sqlite3_finalize(updateStatement)
+                return true
                 
-                // failed, just delete the database
-                deleteFile(file: dataPath)
+            } else {
+                print("Could not add.")
                 return false
+                
             }
+        } else {
+            print("UPDATE statement is failed.")
+            return false
         }
-        
-        return abort
     }
+    
 }

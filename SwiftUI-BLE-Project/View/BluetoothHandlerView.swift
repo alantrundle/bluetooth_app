@@ -6,10 +6,10 @@
 
 import SwiftUI
 
-struct ListView: View {
+struct BluetoothDeviceListView: View {
     @EnvironmentObject var bleManager: CoreBluetoothViewModel
     @State var isSearching = false
-    
+
     var body: some View {
         
         ZStack {
@@ -32,19 +32,23 @@ struct ListView: View {
                         .padding(10)
                     
                     List {
-                        PeripheralCells()
+                        BluetoothDeviceCells()
                     }
                 }
             }
         }
+        
         .navigationTitle("Mifare Toolbox")
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             //bleManager.createDatabase()
         }
+        
     }
     
-    struct PeripheralCells: View {
+}
+        
+    struct BluetoothDeviceCells: View {
         @EnvironmentObject var bleManager: CoreBluetoothViewModel
         
         var body: some View {
@@ -63,4 +67,4 @@ struct ListView: View {
             }
         }
     }
-}
+

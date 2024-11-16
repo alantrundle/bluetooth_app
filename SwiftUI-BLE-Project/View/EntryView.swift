@@ -10,17 +10,12 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         NavigationView {
-            ListView()
+            BluetoothDeviceListView()
+            //BluetoothMain()
         }
     }
 }
     
-// A SwiftUI preview.
-//#Preview {
-//    ContentView()
-//}
-
 #Preview {
-    //DetailView()
-    //CardSecurityEditorView()
+    ContentView()
 }

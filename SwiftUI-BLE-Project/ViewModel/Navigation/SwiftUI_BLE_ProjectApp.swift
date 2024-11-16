@@ -13,6 +13,7 @@ struct SwiftUI_BLE_ProjectApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(CoreBluetoothViewModel())
+                .environmentObject(DBManager())
         }
     }
 }
