@@ -45,6 +45,8 @@ class DBManager: ObservableObject {
     
     @Published var scrollToIndex:Int = -1
     
+    @Published var isHighlighted = false
+    
     let dataPath: String = "MifareDB"
     
     

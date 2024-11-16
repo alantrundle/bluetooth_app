@@ -7,6 +7,11 @@
 import SwiftUI
 import UIKit
 
+enum Field: String {
+    case keyA
+    case keyB
+}
+
 func loadDataMain(sql: DBManager) async {
     
     DispatchQueue.main.async{
@@ -44,16 +49,42 @@ func loadDataListKeys(sql: DBManager, dbid:Int) async {
     }
 }
    
+struct FocusableTextEditor: UIViewRepresentable {
+    @Binding var text: String
 
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.text = text
 
+        // Disable the keyboard
+        textView.inputView = UIView()
+        textView.delegate = context.coordinator
 
-/* Custom HEX Keyboard */
+        return textView
+    }
 
-enum Field: String {
-    case keyA
-    case keyB
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        uiView.text = text
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UITextViewDelegate {
+        var parent: FocusableTextEditor
+
+        init(_ parent: FocusableTextEditor) {
+            self.parent = parent
+        }
+
+        func textViewDidChange(_ textView: UITextView) {
+            parent.text = textView.text
+        }
+    }
 }
 
+/* Custom HEX Keyboard */
 struct HexKeyboard: View {
     @Binding var text: String         // Binding to the text field
     @FocusState var isFocused: Bool    // Track focus state
@@ -95,8 +126,6 @@ struct HexKeyboard: View {
         }
     }
 }
-
-
 /* Custom HEX Keyboard */
 
 
@@ -108,14 +137,12 @@ struct CardSecurityEntryView: View {
     
     var body: some View {
         VStack {
-            
             HStack {
                 Text("Mifare Card Authentication Admin")
-                    .font(.system(size:20))
+                    .font(.system(size: 20))
             }
             
             HStack {
-                
                 Spacer()
                 
                 Button("Setup Database") {
@@ -125,48 +152,51 @@ struct CardSecurityEntryView: View {
                 .background(Color(UIColor.secondarySystemBackground))
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
+                .animation(.easeInOut, value: showAlert)
                 
                 Spacer()
-                
             }
             .padding(.bottom, 20)
-            .alert("Setup Confirmation", isPresented: $showAlert) {
-                Button("Cancel") {
-                    // Action for OK
-                    print("Setup aborted")
-                }
-                Button("Continue") {
-                    sql.db = sql.openDatabase()
-                    sql.setupDatabase()
-                    
-                    sql.keyProfileTable = sql.readProfileTable()
-                    
-                    sql.closeDB(db: sql.db)
-                    print("Setup done")
-                }
-            } message: {
-                Text("You are about to delete the database (if one exists), and create a new one\nPlease confirm to contiune?")
-                    .multilineTextAlignment(.leading)
-            }
-            
+           
             List {
                 CardSecurityEntryCells()
             }
-            .task{
-                if sql.checkDatabaseExists() {
-                    await loadDataMain(sql: sql)
+            .task {
+                do {
+                    if sql.checkDatabaseExists() {
+                       try? await loadDataMain(sql: sql)
+                    }
+                } catch {
+                    print("Error loading data: \(error)")
                 }
             }
-            
         }
         .onAppear {
             sql.generateKeyDataArray = true
             print("DEBUG \(sql.checkDatabaseExists())")
         }
-        
-        Spacer()
+        .alert("Setup Confirmation", isPresented: $showAlert) {
+            Button("Cancel") {
+                print("Setup aborted")
+            }
+            Button("Continue") {
+                performDatabaseSetup()
+            }
+        } message: {
+            Text("You are about to delete the database (if one exists), and create a new one.\nPlease confirm to continue?")
+                .multilineTextAlignment(.leading)
+        }
+    }
+    
+    func performDatabaseSetup() {
+        sql.db = sql.openDatabase()
+        sql.setupDatabase()
+        sql.keyProfileTable = sql.readProfileTable()
+        sql.closeDB(db: sql.db)
+        print("Setup done")
     }
 }
+
 
 
 // Cells for Security Key View
@@ -237,9 +267,8 @@ struct SecurityKeyDetailView : View  {
                     .background(Color.clear)
                     .cornerRadius(8)
                     .font(Font.system(size: 14))
-                    //.focused($isTextFieldFocused)
                     
-                
+                    
                 Spacer()
             }
             
@@ -247,11 +276,6 @@ struct SecurityKeyDetailView : View  {
         .padding(.trailing, 10)
         .padding(.leading, 15)
         .navigationTitle("Key Management")
-        .onAppear() {
-            Dispatch.DispatchQueue.main.async {
-                UITextField.appearance().inputView = nil
-            }
-        }
         
         Divider()
         
@@ -330,6 +354,7 @@ struct SecurityKeyDetailView : View  {
         .alert("Save Confirmation", isPresented: $showSaveAlert) {
             Button("OK") {
                 // Action for OK
+                sql.isHighlighted = false
                 print("Data has been saved")
             }
         } message: {
@@ -366,7 +391,7 @@ struct SecurityKeyDetailCells : View  {
                         
                     }
                     .padding(4)
-                    .border(key_num == sql.scrollToIndex ? Color.red : Color.clear)
+                    .border(key_num == sql.scrollToIndex && sql.isHighlighted ? Color.red : Color.clear)
                     .id(key_num)
                 }
             }
@@ -399,7 +424,7 @@ struct EditSecurityKey: View {
                 Text("A")
                     .font(Font.system(size: 14))
                 
-                TextField("sector A key...", text: $sql.list_keys[varTableRow].keyA)
+                FocusableTextEditor(text: $sql.list_keys[varTableRow].keyA)
                     .frame(width: 300, height: 40)
                     .padding(.leading, 15)
                     .background(Color.clear)
@@ -408,10 +433,11 @@ struct EditSecurityKey: View {
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(focusedField == .keyA ? Color.red : Color.gray))
                     .font(Font.system(size: 14))
                     .onTapGesture {
+                        
                         focusedField = .keyA
                         
                         if sql.list_keys[varTableRow].keyA.count >= maxCharacters {
-                            print("should be highlighted")
+                            print("A should be highlighted")
                         }
                     }
                     .onChange(of: sql.list_keys[varTableRow].keyA) { newValue in
@@ -432,7 +458,7 @@ struct EditSecurityKey: View {
                 Text ("B")
                     .font(Font.system(size: 14))
                 
-                TextField("sector B key...", text: $sql.list_keys[varTableRow].keyB)
+                FocusableTextEditor(text: $sql.list_keys[varTableRow].keyB)
                     .frame(width: 300, height: 40)
                     .padding(.leading, 15)
                     .background(Color.clear)
@@ -442,9 +468,10 @@ struct EditSecurityKey: View {
                     .font(Font.system(size: 14))
                     .onTapGesture {
                         focusedField = .keyB
+                        print("No keyboard")
                         
                         if sql.list_keys[varTableRow].keyB.count >= maxCharacters {
-                            print("should be highlighted")
+                            print("B should be highlighted")
                         }
                     }
                     .onChange(of: sql.list_keys[varTableRow].keyB) { newValue in
@@ -458,9 +485,7 @@ struct EditSecurityKey: View {
             }
             .padding(.leading, 15)
             .padding(.trailing, 15)
-            .onAppear {
-                UITextField.appearance().inputView = UIView()
-            }
+       
             
             VStack {
                 
@@ -510,6 +535,7 @@ struct EditSecurityKey: View {
                 Button("Done") {
                     print("done pressed")
                     sql.scrollToIndex = varTableRow
+                    sql.isHighlighted = true
                     print(sql.scrollToIndex)
                     presentationMode.wrappedValue.dismiss()
                 }
@@ -521,7 +547,6 @@ struct EditSecurityKey: View {
             
         }
         .navigationBarBackButtonHidden(true)
-        
     }
 }
 

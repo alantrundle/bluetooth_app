@@ -34,6 +34,6 @@ struct DetailView: View {
             }
         }
     }
-       
+    
     
 }

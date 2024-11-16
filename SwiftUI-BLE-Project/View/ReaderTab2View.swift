@@ -9,6 +9,14 @@ import UIKit
 
 // 2nd tab
 
+struct test: View {
+    
+    var body: some View {
+        Text("Hi")
+    }
+    
+}
+
 // Main View
 struct CardDataEditorView: View {
     
@@ -16,73 +24,74 @@ struct CardDataEditorView: View {
     @State private var showingAlert = false
     
     var body: some View {
-        VStack {
+        VStack { // This combines both sections into one vertical layout
             
-            HStack {
-                Text("Mifare Card Read/ Writer")
-            }
-            .font(.system(size:20))
-            
-            HStack {
-                Button("Read") {
-                    print("Read tapped!")
-                }
-                .frame(width: 100, height: 50)
-                .background(Color.yellow)
-                .padding(.leading, 15)
-                .padding(.bottom, 15)
-                
-                Spacer()
-            }
-            
-            HStack {
-                Text("Card ID")
-                    .padding(.leading, 20)
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                
-                Text(bleManager.decodedHeadString?.head.uid ?? "None")
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                
-                Spacer()
-                
-                
-            }
-            
-            HStack {
-                Text("Card Type")
-                    .padding(.leading, 20)
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                
-                Text(bleManager.decodedHeadString?.head.type ?? "Unknown")
-                    .font(Font.subheadline)
-                    .frame(width: 100, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                
-                Spacer()
-            }
-            
+            // First Section
             VStack {
+                HStack {
+                    Text("Mifare Card Read/ Writer")
+                        .font(.system(size: 20))
+                }
+               
+                HStack {
+                    Button("Read") {
+                        print("Read tapped!")
+                    }
+                    .frame(width: 100, height: 50)
+                    .background(Color.yellow)
+                    .padding(.leading, 15)
+                    .padding(.bottom, 15)
+                    
+                    Spacer()
+                }
                 
+                HStack {
+                    Text("Card ID")
+                        .padding(.leading, 20)
+                        .font(Font.subheadline)
+                        .frame(width: 100, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                    
+                    Text(bleManager.decodedHeadString?.head.uid ?? "None")
+                        .font(Font.subheadline)
+                        .frame(width: 100, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                    
+                    Spacer()
+                }
+                
+                HStack {
+                    Text("Card Type")
+                        .padding(.leading, 20)
+                        .font(Font.subheadline)
+                        .frame(width: 100, alignment: .leading)
+                    
+                    Text(bleManager.decodedHeadString?.head.type ?? "Unknown")
+                        .font(Font.subheadline)
+                        .frame(width: 100, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                    
+                    Spacer()
+                }
+            }
+            .alert(isPresented: $bleManager.showAlert) {
+                Alert(title: Text(bleManager.error_title),
+                      message: Text(bleManager.error_msg))
+            }
+           
+            // Second Section
+            VStack {
                 List {
                     ReaderDataCells()
                 }
                 .padding(.top, 20)
-                
             }
             
+            Spacer()
         }
-        .alert(isPresented: $bleManager.showAlert) {
-            Alert(title: Text(bleManager.error_title),
-                  message: Text(bleManager.error_msg)
-            )}
-        
     }
 }
+
 
 // Cells for Reader/Writer View
 struct ReaderDataCells: View {
