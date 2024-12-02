@@ -1,4 +1,4 @@
-firmware_url=https://raw.githubusercontent.com/alantrundle/bluetooth_app/main//ESP32%20Firmware/firmware.bin
+firmware_url=https://raw.githubusercontent.com/alantrundle/bluetooth_app/main/ESP32%20Firmware/firmware.bin
 firmware_version=1.0.0
 firmware_name=Sedrick
 checksum=95e991d59cb203373f202137d70157bde889a8118dca951cb5fc12607aadf3f4}
