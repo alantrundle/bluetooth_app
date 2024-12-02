@@ -1,4 +1,4 @@
-firmware_url=https://raw.githubusercontent.com/alantrundle/bluetooth_app/main/ESP32%20Firmware/firmware.bin
+firmware_url=https://github.com/alantrundle/bluetooth_app/blob/3fdc5e2be6793271d47740b1d4180ab46041ad5c/ESP32%20Firmware/firmware.bin
 firmware_version=1.0.0
 firmware_name=Marvin
 checksum=6100884ce9999ac744c9ef8c985eedb47ecca4f88b64c29e689bdcf32e056c47
