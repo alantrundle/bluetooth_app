@@ -1,5 +1,5 @@
-firmware_url=https://raw.githubusercontent.com/alantrundle/bluetooth_app/main/ESP32%20Firmware/firmware.bin
-firmware_version=1.0.2
+url=https://raw.githubusercontent.com/alantrundle/bluetooth_app/main/ESP32%20Firmware/firmware.bin
+version=1.0.2
 firmware_name=Rodger
 checksum=74e5a91d8438da3dc57febdfbec507acce76f0e7f77aa435a4b67b8802f0f633
 
