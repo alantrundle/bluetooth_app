@@ -22,7 +22,7 @@ func loadDataMain(sql: DBManager) async {
         sql.keyProfileTable = sql.readProfileTable()
         sql.keysTable = sql.readKeysTable()
         sql.cardTypesTable = sql.readcardTypesTable()
-        let close = sql.closeDB(db: sql.db)
+        _ = sql.closeDB(db: sql.db)
         
         print(sql.keyProfileTable[1].profileName)
         
@@ -41,7 +41,7 @@ func loadDataListKeys(sql: DBManager, dbid:Int) async {
             
             sql.db = sql.openDatabase()
             sql.list_keys = sql.readKeysTableByProfileID(profileID: dbid)
-            let close = sql.closeDB(db: sql.db)
+            _ = sql.closeDB(db: sql.db)
  
         }
         
@@ -131,7 +131,7 @@ struct HexKeyboard: View {
 
 struct CardSecurityEntryView: View {
     
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
+    @EnvironmentObject var bleManager: BLEManager
     @EnvironmentObject var sql: DBManager
     @State var showAlert: Bool = false
     
@@ -162,13 +162,11 @@ struct CardSecurityEntryView: View {
                 CardSecurityEntryCells()
             }
             .task {
-                do {
+
                     if sql.checkDatabaseExists() {
-                       try? await loadDataMain(sql: sql)
+                       await loadDataMain(sql: sql)
                     }
-                } catch {
-                    print("Error loading data: \(error)")
-                }
+               
             }
         }
         .onAppear {
@@ -202,7 +200,7 @@ struct CardSecurityEntryView: View {
 // Cells for Security Key View
 // Pass mykeys[num].id as t to SecurityKeyDetail
 struct CardSecurityEntryCells: View {
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
+    @EnvironmentObject var bleManager: BLEManager
     @EnvironmentObject var sql: DBManager
     @State var keys:[cardSecurityKeysTable] = []
     @State var showAlert: Bool = false
@@ -232,7 +230,7 @@ struct CardSecurityEntryCells: View {
 
 // Lists Sector Key Data
 struct SecurityKeyDetailView : View  {
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
+    @EnvironmentObject var bleManager: BLEManager
     @EnvironmentObject var sql: DBManager
     
     @State var varTableRow: Int?

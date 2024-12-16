@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct BluetoothDeviceListView: View {
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
+    @EnvironmentObject var bleManager: BLEManager
     @State var isSearching = false
 
     var body: some View {
@@ -19,9 +19,9 @@ struct BluetoothDeviceListView: View {
                 if !bleManager.isConnected {
                     Button(action: {
                         if bleManager.isSearching {
-                            bleManager.stopScan()
+                            bleManager.stopScanning()
                         } else {
-                            bleManager.startScan()
+                            bleManager.startScanning()
                             bleManager.isSearching = true
                         }
                     }) {
@@ -49,12 +49,12 @@ struct BluetoothDeviceListView: View {
 }
         
     struct BluetoothDeviceCells: View {
-        @EnvironmentObject var bleManager: CoreBluetoothViewModel
+        @EnvironmentObject var bleManager: BLEManager
         
         var body: some View {
             ForEach(0..<bleManager.foundPeripherals.count, id: \.self) { num in
                 Button(action: {
-                    bleManager.stopScan()
+                    bleManager.stopScanning()
                     bleManager.connectPeripheral(bleManager.foundPeripherals[num])
                     
                 }) {

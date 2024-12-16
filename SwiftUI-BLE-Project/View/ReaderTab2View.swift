@@ -20,7 +20,7 @@ struct test: View {
 // Main View
 struct CardDataEditorView: View {
     
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
+    @EnvironmentObject var bleManager: BLEManager
     @State private var showingAlert = false
     
     var body: some View {
@@ -36,6 +36,8 @@ struct CardDataEditorView: View {
                 HStack {
                     Button("Read") {
                         print("Read tapped!")
+                        bleManager.readFullResponse = nil
+                        bleManager.sendTestReadCard()
                     }
                     .frame(width: 100, height: 50)
                     .background(Color.yellow)
@@ -52,7 +54,7 @@ struct CardDataEditorView: View {
                         .frame(width: 100, alignment: .leading)
                         .multilineTextAlignment(.leading)
                     
-                    Text(bleManager.decodedHeadString?.head.uid ?? "None")
+                    Text(bleManager.isFullRead ? bleManager.readFullResponse?.rfidUID ?? "None" : bleManager.readBasicResponse?.rfidUID ?? "None")
                         .font(Font.subheadline)
                         .frame(width: 100, alignment: .leading)
                         .multilineTextAlignment(.leading)
@@ -66,7 +68,7 @@ struct CardDataEditorView: View {
                         .font(Font.subheadline)
                         .frame(width: 100, alignment: .leading)
                     
-                    Text(bleManager.decodedHeadString?.head.type ?? "Unknown")
+                    Text(bleManager.isFullRead ? bleManager.readFullResponse?.cardType ?? "Unknown" :bleManager.readBasicResponse?.cardType ?? "Unknown" )
                         .font(Font.subheadline)
                         .frame(width: 100, alignment: .leading)
                         .multilineTextAlignment(.leading)
@@ -95,25 +97,49 @@ struct CardDataEditorView: View {
 
 // Cells for Reader/Writer View
 struct ReaderDataCells: View {
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
-    
+    @EnvironmentObject var bleManager: BLEManager // Pass in the BLEManager as an environment object or property
+
     var body: some View {
-        ForEach(0..<(bleManager.decodedSectorString?.count ?? 0), id: \.self) { num in
-            Section(header: Text("Sector \(bleManager.decodedSectorString![num].sector.sectorID)")) {
-                ForEach(0..<bleManager.decodedSectorString![num].sector.data.count, id: \.self) { j in
-                    
-                    VStack {
-                        if (bleManager.decodedSectorString![num].sector.data[j].blockReaderr.isEmpty) {
-                            Text("[\(bleManager.decodedSectorString![num].sector.data[j].blockID)] \(bleManager.decodedSectorString![num].sector.data[j].blockData)")
-                                .font(.system(size:12))
-                        } else {
-                            Text("[\(bleManager.decodedSectorString![num].sector.data[j].blockID)] \(bleManager.decodedSectorString![num].sector.data[j].blockReaderr)")
-                                .font(.system(size:12))
-                                .foregroundColor(.red)
-                        }
-                    }
+              // Unwrap readFullResponse safely
+              if let sectors = bleManager.readFullResponse?.sectors {
+                  ForEach(sectors.indices, id: \.self) { sectorIndex in
+                      SectorView(sector: sectors[sectorIndex])
+                  }
+              } else {
+                  Text("No data available")
+                      .foregroundColor(.gray)
+              }
+    }
+}
+
+struct SectorView: View {
+    let sector: ReadFullResponse.Sector
+
+    var body: some View {
+        Section(header: Text("Sector \(sector.sector)").font(.headline)) {
+            if let blocks = sector.blocks {
+                ForEach(blocks.indices, id: \.self) { blockIndex in
+                    BlockView(block: blocks[blockIndex])
                 }
+            } else {
+                Text("No blocks available")
+                    .foregroundColor(.gray)
             }
         }
     }
 }
+
+
+struct BlockView: View {
+    let block: ReadFullResponse.Sector.Block
+
+    var body: some View {
+        HStack {
+            Text("[\(block.block)] \(block.data ?? "No Data")")
+                .font(.system(size: 12))
+                .foregroundColor(block.status == "success" ? .primary : .red)
+        }
+        .padding(.vertical, 4) // Optional: Add spacing between rows
+    }
+}
+
