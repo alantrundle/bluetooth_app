@@ -410,6 +410,24 @@
 					)
 				)
 			)
+			(pin input line
+				(at 22.86 -20.32 180)
+				(length 2.54)
+				(name "OSCIN"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "21"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
 			(pin output line
 				(at 22.86 -24.13 180)
 				(length 2.54)
@@ -504,24 +522,6 @@
 				(at -22.86 -15.24 0)
 				(length 2.54)
 				(name "D3"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "27"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin input line
-				(at 22.86 -20.32 180)
-				(length 2.54)
-				(name "OSCIN"
 					(effects
 						(font
 							(size 1.27 1.27)
