@@ -8,7 +8,7 @@ import SwiftUI
 import UIKit
 
 struct DetailView: View {
-    @EnvironmentObject var bleManager: CoreBluetoothViewModel
+    @EnvironmentObject var bleManager: BLEManager
     @State private var showingAlert = false
     
     var body: some View {
